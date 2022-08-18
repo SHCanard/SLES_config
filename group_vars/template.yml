@@ -1,0 +1,10 @@
+---
+
+PS1: '\[\e[01;37m\][\[\e[0m\]\[\e[01;32m\]\u\[\e[0m\]\[\e[00;37m\]@\[\e[0m\]\[\e[01;32m\]\h\[\e[0m\]\[\e[00;37m\] \[\e[0m\]\[\e[00;37m\]\t\[\e[0m\]\[\e[01;37m\] \W]\\$ \[\e[0m\]'
+
+ldap_group_search_base: "dc=domain,dc=com?sub?(|(cn=domain users)(cn=admins))"
+
+ad_access_filter: "DOM:domain.com:(|(memberof=cn=admins,ou=groups,dc=domain,dc=com))"
+
+logo_color: '$LtGRN'
+message_of_the_day: '" - This is a TEMPLATE server, have fun!"'
