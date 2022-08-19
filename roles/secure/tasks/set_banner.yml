@@ -1,0 +1,24 @@
+---
+
+- name: Transfer server banner
+  copy:
+    src: banner
+    dest: /etc/issue
+    owner: root
+    mode: 0644
+  become: yes
+
+- name: Ensure Banner is set at pre-login
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    state: present
+    regexp: 'Banner'
+    line: 'Banner /etc/issue'
+  become: yes
+
+- name: Restart sshd
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: sshd
+  become: yes
