@@ -1,0 +1,38 @@
+---
+
+- name: Ensure all updates are installed
+  zypper:
+    name: '*'
+    state: latest
+    update_cache: yes
+  become: yes
+
+- name: Forbid root in SSHD
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: '^PermitRootLogin'
+    backrefs: yes
+    state: present
+    line: 'PermitRootLogin no'
+  become: yes
+
+- name: Forbid non admins in SSHD
+  blockinfile:
+    path: "/etc/ssh/sshd_config"
+    marker: "## {mark} added by ansible"
+    block: |
+      # Make sure only specific groups have shell access
+      Match Group *,!admins
+        ForceCommand /bin/echo -e "This login is forbidden!\nPlease contact the Helpdesk if there's an issue."
+        ForceCommand exit 1
+    state: present
+  become: yes
+
+- name: Set pre-login disclaimer banner
+  include_tasks: set_banner.yml
+
+- name: Reboot
+  shell: "sleep 5 && reboot"
+  async: 1
+  poll: 0
+  become: yes
