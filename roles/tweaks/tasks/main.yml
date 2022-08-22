@@ -185,3 +185,22 @@
   command: grub2-mkconfig -o /boot/efi/EFI/opensuse/grub.cfg
   become: yes
   when: sys_type|lower is search('gpt')
+
+- name: Transfer motd script
+  template:
+    src: motd_{{env}}.j2
+    dest: /tmp/motd.sh
+    owner: root
+    group: root
+    mode: 0744
+  become: yes
+
+- name: Generate motd
+  command: /bin/bash /tmp/motd.sh
+  become: yes
+  
+- name: Remove motd script
+  file:
+    path: /tmp/motd.sh
+    state: absent
+  become: yes
