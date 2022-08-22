@@ -1,0 +1,187 @@
+---
+
+- name: Disable tuned
+  systemd:
+    name: tuned
+    enabled: no
+    state: stopped
+    daemon_reload: yes
+  become: yes
+
+- name: Add RuntimeMaxUse parameter
+  lineinfile:
+    state: present
+    path: /etc/systemd/journald.conf
+    regexp: '^#RuntimeMaxUse='
+    line: 'RuntimeMaxUse=500M'
+  become: yes
+
+- name: Change the scheduling algorythm for I/O operations
+  lineinfile:
+    state: present
+    path: "/etc/default/grub"
+    backrefs: yes
+    regexp: '^(GRUB_CMDLINE_LINUX=(?!.*elevator)\"[^\"]+)(\".*)'
+    line: '\1 elevator=deadline \2'
+  become: yes
+
+- name: Change the transparent_hugepage to never
+  lineinfile:
+    state: present
+    path: "/etc/default/grub"
+    backrefs: yes
+    regexp: '^(GRUB_CMDLINE_LINUX=(?!.*transparent)\"[^\"]+)(\".*)'
+    line: '\1 transparent_hugepage=never \2'
+  become: yes
+
+- name: Set kernel.pid_max
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^kernel.pid_max = 4000000'
+    line: 'kernel.pid_max = 4000000'
+  become: yes
+
+- name: Set kernel.shmmax
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^kernel.shmmax = 2199023255552'
+    line: 'kernel.shmmax = 2199023255552'
+  become: yes
+
+- name: Set kernel.msgmnb
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^kernel.msgmnb = 65536'
+    line: 'kernel.msgmnb = 65536'
+  become: yes
+
+- name: Set vm.swappiness
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^vm.swappiness = 1'
+    line: 'vm.swappiness = 1'
+  become: yes
+
+- name: Set kernel.sem
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^kernel.sem = 250 1024000000 500 32000'
+    line: 'kernel.sem = 250 1024000000 500 32000'
+  become: yes
+
+- name: Set fs.file-max
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^fs.file-max = 1000000000'
+    line: 'fs.file-max = 1000000000'
+  become: yes
+
+- name: Set net.ipv4.tcp_keepalive_time
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^net.ipv4.tcp_keepalive_time = 600'
+    line: 'net.ipv4.tcp_keepalive_time = 600'
+  become: yes
+
+- name: Set net.ipv4.tcp_keepalive_intvl
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^net.ipv4.tcp_keepalive_intvl = 60'
+    line: 'net.ipv4.tcp_keepalive_intvl = 60'
+  become: yes
+
+- name: Set kernel.numa_balancing 
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^kernel.numa_balancing = 0'
+    line: 'kernel.numa_balancing = 0'
+  become: yes
+
+- name: Set vm.dirty_expire_centisecs
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^vm.dirty_expire_centisecs = 200'
+    line: 'vm.dirty_expire_centisecs = 200'
+  become: yes
+
+- name: Set vm.dirty_writeback_centisecs
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^vm.dirty_writeback_centisecs = 50'
+    line: 'vm.dirty_writeback_centisecs = 50'
+  become: yes
+
+- name: Set net.core.rmem_max 
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^net.core.rmem_max = 33554432'
+    line: 'net.core.rmem_max = 33554432'
+  become: yes
+
+- name: Set net.core.wmem_max 
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^net.core.wmem_max = 33554432'
+    line: 'net.core.wmem_max = 33554432'
+  become: yes
+
+- name: Set net.ipv4.tcp_rmem 
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^net.ipv4.tcp_rmem = 4096 87380 33554432'
+    line: 'net.ipv4.tcp_rmem = 4096 87380 33554432'
+  become: yes
+
+- name: Set net.ipv4.tcp_wmem 
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^net.ipv4.tcp_wmem = 4096 65536 33554432'
+    line: 'net.ipv4.tcp_wmem = 4096 65536 33554432'
+  become: yes
+  
+- name: Set net.core.netdev_max_backlog 
+  lineinfile:
+    path: /etc/sysctl.conf
+    state: present
+    regexp: '^net.core.netdev_max_backlog = 300000'
+    line: 'net.core.netdev_max_backlog = 300000'
+  become: yes
+
+- name: Read /sys/kernel/mm/transparent_hugepage/enabled content
+  command: cat /sys/kernel/mm/transparent_hugepage/enabled
+  register: hugepage_status
+
+- name: Check if hugepage are activated
+  debug:
+    msg: "hugepage are activated"
+  when: hugepage_status|lower is search('[always]')
+
+- name: Get if system use MBR or EFI
+  command: parted /dev/sda print
+  register: sys_type
+  become: yes
+
+- name: Rebuild grub.cfg for MBR
+  command: grub2-mkconfig -o /boot/grub2/grub.cfg
+  become: yes
+  when: sys_type|lower is search('msdos')
+
+- name: Rebuild grub.cfg for EFI
+  command: grub2-mkconfig -o /boot/efi/EFI/opensuse/grub.cfg
+  become: yes
+  when: sys_type|lower is search('gpt')
