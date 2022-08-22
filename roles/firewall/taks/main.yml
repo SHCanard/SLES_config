@@ -1,0 +1,22 @@
+---
+
+- name: Load a variable file based on the env type
+  include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - '{{env}}.yml'
+      paths:
+        - '../../group_vars/'
+
+- name: Set firewall port open
+  firewalld:
+    port: "{{ item }}"
+    zone: public
+    state: enabled
+    permanent: true
+    immediate: yes
+  with_items: "{{ firewall_ports }}"
+  when:
+    - firewall_ports is defined
+  become: yes
