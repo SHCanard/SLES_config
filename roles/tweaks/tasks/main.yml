@@ -194,13 +194,21 @@
     group: root
     mode: 0744
   become: yes
+  when: env is defined
+
+- name: Retrieve motd.sh facts
+  stat:
+    path: /tmp/motd.sh
+  register: stat_motd
 
 - name: Generate motd
   command: /bin/bash /tmp/motd.sh
   become: yes
+  when: stat_motd.stat.exists
   
-- name: Remove motd script
+- name: Remove motd.sh script
   file:
     path: /tmp/motd.sh
     state: absent
   become: yes
+  when: stat_motd.stat.exists
