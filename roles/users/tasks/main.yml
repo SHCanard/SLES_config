@@ -1,0 +1,59 @@
+
+---
+
+- name: Load a variable file based on the env type
+  include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - '{{env}}.yml'
+      paths:
+        - '../../group_vars/'
+
+- name: Ensure local groups exists
+  group:
+    name: "{{ item.value.name }}"
+    gid: "{{ item.value.gid }}"
+    state: present
+  with_dict: "{{ custom_groups }}"
+  when: custom_groups is defined
+  become: yes
+
+- name: Ensure local users exists
+  user: 
+    name: "{{ item.value.name }}"
+    state: present
+    uid: "{{ item.value.uid }}"
+    group: "{{ item.value.primary_group }}"
+    home: "{{ item.value.homedir }}"
+    shell: "{{ item.value.shell }}"
+    append: yes
+  with_dict: "{{ custom_users }}"
+  when: custom_users is defined
+  become: yes
+     
+- name: Add bashrc template to skeleton
+  template:
+    src: bashrc.j2
+    dest: /etc/skel/.bashrc
+    owner: root
+    group: root
+    mode: 0440
+  become: yes
+
+- name: Change root user PS1 color
+  lineinfile:
+    path: /root/.bashrc
+    state: present
+    regexp: '^export PS1'
+    line: 'export PS1="{{ PS1 }}"'
+    create: yes
+  become: yes
+
+- name: Add history date format to root bashrc
+  lineinfile:
+    path: /root/.bashrc
+    state: present
+    regexp: '^export HISTTIMEFORMAT'
+    line: 'export HISTTIMEFORMAT="%d/%m/%y %T "'
+  become: yes
